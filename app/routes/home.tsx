@@ -33,47 +33,39 @@ export default function Home() {
     fetchProjects();
   }, []);
 
-  const handleUploadComplete = async (file: File) => {
+  const handleUploadComplete = async (base64Image: string) => {
     // Prevent double submissions
     if (isCreatingProjectRef.current) return;
     isCreatingProjectRef.current = true;
 
     try {
-      // Convert file to base64 for storage/preview
-      const reader = new FileReader();
-      reader.onloadend = async () => {
-        const base64Image = reader.result as string;
+      const newId = Date.now().toString();
+      const name = `Residence ${newId}`;
 
-        const newId = Date.now().toString();
-        const name = `Residence ${newId}`;
-
-        const newItem = {
-          id: newId,
-          name,
-          sourceImage: base64Image,
-          renderedImage: undefined,
-          timestamp: Date.now(),
-        };
-
-        // 1. Create the project in the backend (Puter.js)
-        const savedProject = await createProject(newItem);
-
-        if (!savedProject) {
-          console.error("Failed to create project");
-          return;
-        }
-
-        // 2. Navigate immediately to the visualizer with the new project data
-        navigate(`/visualizer/${savedProject.id}`, {
-          state: {
-            initialImage: savedProject.sourceImage,
-            initialRendered: null,
-            name: savedProject.name
-          }
-        });
+      const newItem = {
+        id: newId,
+        name,
+        sourceImage: base64Image, // Use the string directly!
+        renderedImage: undefined,
+        timestamp: Date.now(),
       };
 
-      reader.readAsDataURL(file);
+      // 1. Create the project
+      const savedProject = await createProject({ item: newItem, visibility: 'private' });
+
+      if (!savedProject) {
+        console.error("Failed to create project");
+        return;
+      }
+
+      // 2. Navigate
+      navigate(`/visualizer/${savedProject.id}`, {
+        state: {
+          initialImage: savedProject.sourceImage,
+          initialRendered: null,
+          name: savedProject.name
+        }
+      });
 
     } catch (error) {
       console.error("Error processing upload:", error);
@@ -81,7 +73,6 @@ export default function Home() {
       isCreatingProjectRef.current = false;
     }
   };
-
   return (
       <div className="home min-h-screen bg-white text-black font-sans">
         <Navbar />
