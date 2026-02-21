@@ -1,12 +1,10 @@
 import { useEffect, useRef, useState } from "react";
 import { useNavigate } from "react-router";
-import { ArrowRight, Layers, Clock, ArrowUpRight } from "lucide-react"; // Assuming lucide-react
+import { ArrowRight, Layers, Clock, ArrowUpRight } from "lucide-react";
 import Button from "../../components/ui/Button";
 import Upload from "../../components/Upload";
-import Navbar from "../../components/Navbar"; // Assuming this path
+import Navbar from "../../components/Navbar";
 import { createProject, getProjects } from "../../lib/puter.action";
-// Import your type definition if it's in a separate file, e.g.:
-// import { DesignItem } from "../../types";
 
 export function meta() {
   return [
@@ -17,10 +15,20 @@ export function meta() {
 
 export default function Home() {
   const navigate = useNavigate();
-  const [projects, setProjects] = useState<any[]>([]); // Replace 'any' with 'DesignItem'
+  const [projects, setProjects] = useState<any[]>([]);
   const isCreatingProjectRef = useRef(false);
 
-  // Load projects on mount
+  // --- NEW: Style Selection State ---
+  const [selectedStyle, setSelectedStyle] = useState("Modern Minimalist");
+
+  const designStyles = [
+    { id: "Modern Minimalist", icon: "✨", desc: "Clean lines, neutral tones" },
+    { id: "Industrial Loft", icon: "🧱", desc: "Exposed brick, raw metals" },
+    { id: "Japanese Zen", icon: "🎋", desc: "Natural wood, warm lighting" },
+    { id: "Mid-Century", icon: "🛋️", desc: "Retro furniture, bold colors" }
+  ];
+  // ----------------------------------
+
   useEffect(() => {
     const fetchProjects = async () => {
       try {
@@ -34,7 +42,6 @@ export default function Home() {
   }, []);
 
   const handleUploadComplete = async (base64Image: string) => {
-    // Prevent double submissions
     if (isCreatingProjectRef.current) return;
     isCreatingProjectRef.current = true;
 
@@ -45,12 +52,11 @@ export default function Home() {
       const newItem = {
         id: newId,
         name,
-        sourceImage: base64Image, // Use the string directly!
+        sourceImage: base64Image,
         renderedImage: undefined,
         timestamp: Date.now(),
       };
 
-      // 1. Create the project
       const savedProject = await createProject({ item: newItem, visibility: 'private' });
 
       if (!savedProject) {
@@ -58,12 +64,13 @@ export default function Home() {
         return;
       }
 
-      // 2. Navigate
+      // --- UPDATED: Passing the selectedStyle in the navigation state ---
       navigate(`/visualizer/${savedProject.id}`, {
         state: {
           initialImage: savedProject.sourceImage,
           initialRendered: null,
-          name: savedProject.name
+          name: savedProject.name,
+          style: selectedStyle // Passes the user's choice to the next page!
         }
       });
 
@@ -73,98 +80,141 @@ export default function Home() {
       isCreatingProjectRef.current = false;
     }
   };
+
   return (
-      <div className="home min-h-screen bg-white text-black font-sans">
+      <div className="home min-h-screen bg-white text-black font-sans selection:bg-orange-100 selection:text-orange-900">
         <Navbar />
 
-        <section className="hero flex flex-col items-center text-center pt-20 px-4">
-          {/* Announcement Pill */}
-          <div className="announce mb-6 inline-flex items-center gap-2 rounded-full border border-gray-200 bg-gray-50 px-3 py-1 text-sm font-medium text-gray-800">
+        {/* --- PREMIUM HERO SECTION --- */}
+        <section className="hero relative flex flex-col items-center text-center pt-32 px-4 pb-20 overflow-hidden">
+
+          {/* Background Glow */}
+          <div className="absolute top-0 left-1/2 -translate-x-1/2 w-[800px] h-[400px] bg-gradient-to-tr from-blue-500/10 to-orange-400/20 blur-[120px] -z-10 rounded-full pointer-events-none"></div>
+
+          <div className="announce mb-8 inline-flex items-center gap-2 rounded-full border border-gray-200/50 bg-white/60 backdrop-blur-md px-4 py-1.5 text-sm font-medium text-gray-800 shadow-[0_2px_10px_rgba(0,0,0,0.04)]">
             <div className="dot relative flex h-2 w-2">
-              <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-blue-400 opacity-75"></span>
-              <span className="relative inline-flex rounded-full h-2 w-2 bg-blue-500"></span>
+              <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-orange-400 opacity-75"></span>
+              <span className="relative inline-flex rounded-full h-2 w-2 bg-orange-500"></span>
             </div>
             <p>Introducing Roomify 2.0</p>
           </div>
 
-          <h1 className="max-w-4xl text-5xl font-bold tracking-tight sm:text-7xl mb-6">
-            Build beautiful spaces at the speed of thought with Roomify
+          <h1 className="max-w-5xl text-6xl font-extrabold tracking-tight sm:text-8xl mb-8 text-transparent bg-clip-text bg-gradient-to-b from-gray-900 via-gray-800 to-gray-500">
+            Build beautiful spaces <br/> at the speed of thought.
           </h1>
 
-          <p className="subtitle max-w-2xl text-lg text-gray-600 mb-10">
-            Roomify is an AI-first design environment that helps you visualize, render, and ship architectural projects faster than ever.
+          <p className="subtitle max-w-2xl text-xl text-gray-500 mb-12 font-light tracking-wide">
+            An AI-first design environment to visualize, render, and ship architectural projects faster than ever.
           </p>
 
-          <div className="actions flex gap-4 justify-center mb-20">
+          <div className="actions flex flex-col sm:flex-row gap-4 justify-center mb-24 z-10">
             <a
                 href="#upload"
-                className="cta inline-flex items-center justify-center rounded-lg bg-orange-500 px-6 py-3 text-sm font-semibold text-white shadow-sm hover:bg-orange-600 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-orange-600"
+                className="group relative inline-flex items-center justify-center rounded-full bg-gray-900 px-8 py-4 text-sm font-semibold text-white transition-all duration-300 ease-out hover:scale-105 hover:shadow-[0_0_40px_rgba(0,0,0,0.3)] hover:bg-black"
             >
-              Start Building <ArrowRight className="ml-2 h-4 w-4" />
+              Start Building
+              <ArrowRight className="ml-2 h-4 w-4 transition-transform group-hover:translate-x-1" />
             </a>
-
-            <Button variant="outline" size="lg" className="demo">
+            <Button variant="outline" size="lg" className="rounded-full px-8 py-4 border-gray-200 text-gray-700 hover:bg-gray-50 shadow-sm hover:shadow-md transition-all">
               Watch Demo
             </Button>
           </div>
 
-          {/* Upload Section */}
-          <div id="upload" className="upload-shell relative w-full max-w-3xl mx-auto mb-20">
-            {/* Grid Background Effect */}
-            <div className="grid-overlay absolute inset-0 -z-10 bg-[linear-gradient(to_right,#80808012_1px,transparent_1px),linear-gradient(to_bottom,#80808012_1px,transparent_1px)] bg-[size:24px_24px]"></div>
+          {/* --- FUNNEL: STYLE SELECTOR & UPLOAD --- */}
+          <div id="upload" className="w-full max-w-4xl mx-auto z-10 scroll-mt-32">
 
-            <div className="upload-card rounded-2xl border border-gray-200 bg-white p-8 shadow-xl">
-              <div className="upload-head mb-8 flex flex-col items-center">
-                <div className="upload-icon mb-4 rounded-full bg-blue-50 p-3 text-blue-600">
-                  <Layers className="h-6 w-6" />
-                </div>
-                <h3 className="text-xl font-semibold">Upload your floor plan</h3>
-                <p className="text-sm text-gray-500">Supports JPG, PNG formats up to 10MB</p>
+            {/* Step 1: Style Grid */}
+            <div className="mb-12">
+              <div className="text-center mb-6">
+                <h3 className="text-sm font-bold tracking-widest text-gray-400 uppercase">1. Choose your aesthetic</h3>
               </div>
 
-              {/* Pass the handler that accepts a File object */}
-              <Upload onComplete={(file) => handleUploadComplete(file)} />
+              <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+                {designStyles.map((style) => (
+                    <button
+                        key={style.id}
+                        onClick={() => setSelectedStyle(style.id)}
+                        className={`relative flex flex-col items-center p-5 rounded-3xl border transition-all duration-300 text-left w-full h-full
+                    ${selectedStyle === style.id
+                            ? 'bg-orange-50/50 border-orange-500 shadow-[0_0_20px_rgba(249,115,22,0.15)] scale-105 z-10'
+                            : 'bg-white border-gray-100 shadow-sm hover:border-orange-200 hover:shadow-md hover:bg-gray-50'
+                        }`}
+                    >
+                      <span className="text-3xl mb-3">{style.icon}</span>
+                      <span className={`font-bold text-sm mb-1 text-center ${selectedStyle === style.id ? 'text-orange-600' : 'text-gray-900'}`}>
+                    {style.id}
+                  </span>
+                      <span className="text-xs text-gray-500 text-center leading-relaxed">
+                    {style.desc}
+                  </span>
+
+                      {selectedStyle === style.id && (
+                          <div className="absolute top-4 right-4 w-2.5 h-2.5 rounded-full bg-orange-500 shadow-sm"></div>
+                      )}
+                    </button>
+                ))}
+              </div>
+            </div>
+
+            {/* Step 2: File Upload */}
+            <div className="text-center mb-6">
+              <h3 className="text-sm font-bold tracking-widest text-gray-400 uppercase">2. Upload your space</h3>
+            </div>
+
+            <div className="upload-shell relative w-full">
+              <div className="grid-overlay absolute inset-0 -z-10 bg-[linear-gradient(to_right,#80808012_1px,transparent_1px),linear-gradient(to_bottom,#80808012_1px,transparent_1px)] bg-[size:24px_24px] rounded-3xl"></div>
+
+              <div className="upload-card rounded-3xl border border-gray-200 bg-white/80 backdrop-blur-xl p-10 shadow-xl">
+                <div className="upload-head mb-8 flex flex-col items-center">
+                  <div className="upload-icon mb-4 rounded-full bg-orange-50 p-4 text-orange-600 shadow-sm border border-orange-100">
+                    <Layers className="h-7 w-7" />
+                  </div>
+                  <h3 className="text-2xl font-bold tracking-tight text-gray-900">Upload your floor plan</h3>
+                  <p className="text-sm text-gray-500 mt-2">Supports JPG, PNG formats up to 10MB</p>
+                </div>
+
+                <Upload onComplete={(file) => handleUploadComplete(file)} />
+              </div>
             </div>
           </div>
         </section>
 
-        {/* Projects Grid Section */}
-        <section className="projects bg-gray-50 py-20 px-4">
+        {/* --- PROJECTS GALLERY --- */}
+        <section className="projects bg-[#f8fafc] py-24 px-4 border-t border-gray-100">
           <div className="section-inner max-w-7xl mx-auto">
-            <div className="section-head mb-10">
-              <h2 className="text-3xl font-bold mb-2">Projects</h2>
-              <p className="text-gray-600">Your latest work and shared community projects, all in one place.</p>
+            <div className="section-head mb-12 flex justify-between items-end">
+              <div>
+                <h2 className="text-3xl font-bold mb-3 tracking-tight text-gray-900">Recent Projects</h2>
+                <p className="text-gray-500 text-lg">Your latest architectural renders and visualizations.</p>
+              </div>
             </div>
 
-            <div className="projects-grid grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-8">
+            <div className="projects-grid grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
               {projects.map(({ id, name, renderedImage, sourceImage, timestamp }) => (
                   <div
                       key={id}
                       onClick={() => navigate(`/visualizer/${id}`)}
-                      className="project-card group cursor-pointer overflow-hidden rounded-xl bg-white shadow-sm transition-all hover:shadow-md border border-gray-100"
+                      className="project-card group cursor-pointer overflow-hidden rounded-3xl bg-white shadow-sm transition-all duration-300 hover:shadow-[0_8px_30px_rgb(0,0,0,0.08)] hover:-translate-y-1 border border-gray-100"
                   >
-                    <div className="preview relative aspect-[4/3] overflow-hidden bg-gray-100">
+                    <div className="preview relative aspect-[4/3] overflow-hidden bg-gray-100 border-b border-gray-100">
                       <img
                           src={renderedImage || sourceImage}
                           alt={name}
-                          className="h-full w-full object-cover transition-transform duration-300 group-hover:scale-105"
+                          className="h-full w-full object-cover transition-transform duration-700 group-hover:scale-105"
                       />
-                      <div className="badge absolute top-3 left-3 rounded-full bg-white/90 px-2.5 py-0.5 text-xs font-medium text-gray-800 backdrop-blur-sm">
-                        Community
-                      </div>
+                      <div className="absolute inset-0 bg-gradient-to-t from-black/20 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300"></div>
                     </div>
 
-                    <div className="card-body p-4 flex justify-between items-start">
+                    <div className="card-body p-6 flex justify-between items-start bg-white">
                       <div>
-                        <h3 className="font-semibold text-gray-900">{name}</h3>
-                        <div className="meta mt-1 flex items-center gap-2 text-xs text-gray-500">
-                          <Clock size={12} />
+                        <h3 className="font-bold text-gray-900 text-lg mb-1 tracking-tight">{name}</h3>
+                        <div className="meta flex items-center gap-2 text-xs font-medium text-gray-500">
+                          <Clock size={14} className="text-orange-500" />
                           <span>{new Date(timestamp).toLocaleDateString()}</span>
-                          <span>• By User</span>
                         </div>
                       </div>
-                      <div className="arrow text-gray-300 transition-colors group-hover:text-gray-900">
-                        <ArrowUpRight size={20} />
+                      <div className="arrow flex items-center justify-center w-8 h-8 rounded-full bg-gray-50 text-gray-400 transition-all duration-300 group-hover:bg-gray-900 group-hover:text-white group-hover:rotate-45">
+                        <ArrowUpRight size={18} />
                       </div>
                     </div>
                   </div>
